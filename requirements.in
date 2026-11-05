@@ -1,0 +1,6 @@
+openai==2.8.1
+anthropic==0.74.1
+pydantic>=2,<3
+python-dotenv
+# Transporte de los SDKs; también permite simular HTTP en las pruebas offline.
+httpx==0.28.1
