@@ -2,7 +2,7 @@
 
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 Provider = Literal["openai", "anthropic"]
 
@@ -14,6 +14,10 @@ class Schema(BaseModel):
 class ChatMessage(Schema):
     role: Literal["system", "user", "assistant"]
     content: str = Field(min_length=1)
+
+
+class Credentials(Schema):
+    api_key: SecretStr = Field(min_length=1)
 
 
 class ModelConfig(Schema):

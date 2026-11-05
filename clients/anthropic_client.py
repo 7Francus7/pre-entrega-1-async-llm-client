@@ -5,6 +5,7 @@ from typing import cast
 
 from anthropic import AsyncAnthropic
 from anthropic.types import MessageParam
+from pydantic import SecretStr
 
 from clients.base import BaseLLMClient
 from errors import LLMClientError
@@ -12,10 +13,11 @@ from schemas import ChatMessage, ErrorInfo, ModelConfig, ModelResponse, TokenUsa
 
 
 class AnthropicClient(BaseLLMClient):
-    def __init__(self, config: ModelConfig, api_key: str, *, sdk: AsyncAnthropic | None = None):
+    def __init__(self, config: ModelConfig, api_key: str | SecretStr, *, sdk: AsyncAnthropic | None = None):
         super().__init__(config)
+        secret = api_key if isinstance(api_key, SecretStr) else SecretStr(api_key)
         self.sdk = sdk if sdk is not None else AsyncAnthropic(
-            api_key=api_key, timeout=config.timeout, max_retries=config.max_retries,
+            api_key=secret.get_secret_value(), timeout=config.timeout, max_retries=config.max_retries,
         )
 
     def _split_messages(self, messages: list[ChatMessage]) -> tuple[str, list[MessageParam]]:

@@ -60,6 +60,12 @@ El archivo `.env` se busca junto a `main.py`. Las variables ya definidas en el
 sistema tienen prioridad sobre `.env`, por el comportamiento de `load_dotenv`.
 `.env` está excluido de Git; `.env.example` solo contiene campos vacíos.
 
+El gestor valida las credenciales mediante `Credentials`, cuyo campo
+`api_key` es `SecretStr` de Pydantic. Su representación y serialización JSON
+ocultan la clave. El adaptador usa `get_secret_value()` al construir el SDK.
+Esto evita exposiciones accidentales al mostrar el esquema; no cifra la clave
+ni reemplaza el cuidado del archivo `.env` o la configuración de los logs HTTP.
+
 ### Compatibilidad
 
 Se fijan `openai==2.8.1`, `anthropic==0.74.1` y `httpx==0.28.1` para conservar
@@ -80,7 +86,7 @@ tiempo total de la solicitud. No se implementa un plazo total de generación.
 
 ```text
 .
-├── schemas.py                  # Mensajes, configuración, respuesta y errores
+├── schemas.py                  # Mensajes, configuración, credenciales y respuesta
 ├── errors.py                   # Excepción común y traducción de errores
 ├── manager.py                  # AsyncLLMManager y selección desde el entorno
 ├── clients/
@@ -197,7 +203,7 @@ devuelve JSON o eventos SSE locales. No hay solicitudes a los proveedores.
 
 Las pruebas verifican ambos proveedores, selección por entorno, traducción
 de `system`, respuesta normal, streaming incremental, cierre anticipado,
-validación, red, timeouts, autenticación, permisos, rate limiting, reintentos
+validación, red, timeouts, autenticación, permisos, protección de credenciales, rate limiting, reintentos
 limitados, respuestas vacías, cancelación y recuperación del script principal.
 También verifican que una corrutina pueda progresar mientras la llamada espera.
 

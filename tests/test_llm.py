@@ -17,7 +17,7 @@ from clients import AnthropicClient, BaseLLMClient, OpenAIClient
 from errors import LLMClientError
 from manager import AsyncLLMManager
 from main import main
-from schemas import ChatMessage, ChatRequest, ModelConfig
+from schemas import ChatMessage, ChatRequest, Credentials, ModelConfig
 
 
 MESSAGES = [
@@ -93,6 +93,27 @@ class EventStream(httpx.AsyncByteStream):
 
 
 class SchemaTests(unittest.TestCase):
+    def test_credentials_hide_api_key(self):
+        credentials = Credentials(api_key="test-secret-not-for-logs")
+        self.assertNotIn("test-secret-not-for-logs", repr(credentials))
+        self.assertNotIn("test-secret-not-for-logs", credentials.model_dump_json())
+        self.assertEqual(credentials.api_key.get_secret_value(), "test-secret-not-for-logs")
+        with self.assertRaises(ValidationError):
+            Credentials(api_key="")
+
+    def test_adapters_unwrap_secret_only_for_sdk(self):
+        for provider, client_class, sdk_path in [
+            ("openai", OpenAIClient, "clients.openai_client.AsyncOpenAI"),
+            ("anthropic", AnthropicClient, "clients.anthropic_client.AsyncAnthropic"),
+        ]:
+            with self.subTest(provider=provider), patch(sdk_path) as sdk_factory:
+                config = ModelConfig(provider=provider, model="test-model")
+                credentials = Credentials(api_key="test-key")
+                client_class(config, credentials.api_key)
+                sdk_factory.assert_called_once_with(
+                    api_key="test-key", timeout=config.timeout, max_retries=config.max_retries,
+                )
+
     def test_message_validation(self):
         for data in [
             {"role": "unknown", "content": "hola"},

@@ -6,7 +6,7 @@ from typing import Self
 
 from clients import AnthropicClient, BaseLLMClient, OpenAIClient
 from errors import LLMClientError
-from schemas import ChatMessage, ErrorInfo, ModelConfig, ModelResponse
+from schemas import ChatMessage, Credentials, ErrorInfo, ModelConfig, ModelResponse
 
 
 class AsyncLLMManager:
@@ -16,8 +16,9 @@ class AsyncLLMManager:
                 code="configuration", message=f"Falta {config.provider.upper()}_API_KEY en el entorno o .env.",
             ))
         self.config = config
+        credentials = Credentials(api_key=api_key.strip())
         client_class = OpenAIClient if config.provider == "openai" else AnthropicClient
-        self.client: BaseLLMClient = client_class(config, api_key.strip())
+        self.client: BaseLLMClient = client_class(config, credentials.api_key)
 
     @classmethod
     def from_env(cls) -> Self:
